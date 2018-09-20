@@ -200,8 +200,12 @@ setMethod("dbWriteTable", signature(conn = "clickhouse_connection", name = "char
     for (c in names(classes[classes=="factor"])) {
       levels(value[[c]]) <- enc2utf8(levels(value[[c]]))
     }
-    write.table(value, textConnection("value_str", open="w"), sep="\t", row.names=F, col.names=F)
-    value_str2 <- paste0(get("value_str"), collapse="\n")
+    # Format the values for the fields using apply(). 
+    # This does not place double quotes around strings 
+    # which the previous method using write.table did. 
+    # Additionally, remove white space which causes a problem.
+    value_str = trimws(as.character(apply(X = value, MARGIN = 1, FUN = paste0, collapse = '\t')))
+    value_str2 = paste0(value_str, collapse = '\n')
 
 	h <- curl::new_handle()
 	curl::handle_setopt(h, copypostfields = value_str2, userpwd = paste0(conn@user, ":", conn@password), httpauth = 1L, ssl_verifypeer = FALSE)
