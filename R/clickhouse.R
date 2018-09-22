@@ -200,10 +200,16 @@ setMethod("dbWriteTable", signature(conn = "clickhouse_connection", name = "char
     for (c in names(classes[classes=="factor"])) {
       levels(value[[c]]) <- enc2utf8(levels(value[[c]]))
     }
-    # Format the values for the fields using apply(). 
-    # This does not place double quotes around strings 
-    # which the previous method using write.table did. 
+    # Add double quotes around all character and factor columns
+    # Format the values for the fields using apply()
     # Additionally, remove white space which causes a problem.
+    # Note that if any numeric column contains a number after a decimal point
+    # all numeric values that are exact integers will be represented with 
+    # an addition .0 after the number. So 1 becomes 1.0, 11 becomes 11.0 and so on.
+    # This is different from the write.table behaviour which did not add this 
+    # extra detail.
+    strpos = as.integer(which(unlist(lapply(value, function(x) is.character(x) || is.factor(x)))))
+    value[,strpos] = data.frame(sapply(value[,strpos],function(x) {paste0('"',x,'"')}))
     value_str = trimws(as.character(apply(X = value, MARGIN = 1, FUN = paste0, collapse = '\t')))
     value_str2 = paste0(value_str, collapse = '\n')
 
