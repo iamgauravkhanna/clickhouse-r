@@ -200,18 +200,10 @@ setMethod("dbWriteTable", signature(conn = "clickhouse_connection", name = "char
     for (c in names(classes[classes=="factor"])) {
       levels(value[[c]]) <- enc2utf8(levels(value[[c]]))
     }
-    # Add double quotes around all character and factor columns
-    # Format the values for the fields using apply()
-    # Additionally, remove white space which causes a problem.
-    # Note that if any numeric column contains a number after a decimal point
-    # all numeric values that are exact integers will be represented with 
-    # an addition .0 after the number. So 1 becomes 1.0, 11 becomes 11.0 and so on.
-    # This is different from the write.table behaviour which did not add this 
-    # extra detail.
-    strpos = as.integer(which(unlist(lapply(value, function(x) is.character(x) || is.factor(x)))))
-    value[,strpos] = data.frame(sapply(value[,strpos],function(x) {paste0('"',x,'"')}))
-    value_str = trimws(as.character(apply(X = value, MARGIN = 1, FUN = paste0, collapse = '\t')))
-    value_str2 = paste0(value_str, collapse = '\n')
+    # use local=TRUE in the textConnection call to ensure the calling environment does not
+    # have a variable 'value_str' created
+    write.table(value, textConnection("value_str", open="w", local = TRUE), sep="\t", row.names=F, col.names=F)
+    value_str2 <- paste0(get("value_str"), collapse="\n")
 
 	h <- curl::new_handle()
 	curl::handle_setopt(h, copypostfields = value_str2, userpwd = paste0(conn@user, ":", conn@password), httpauth = 1L, ssl_verifypeer = FALSE)
