@@ -221,6 +221,7 @@ setMethod("dbDataType", signature(dbObj="clickhouse_connection", obj = "ANY"), d
   if (is.logical(obj)) "UInt8"
   else if (is.integer(obj)) "Int32"
   else if (is.numeric(obj)) "Float64"
+  else if (class(obj) == "Date") "Date"
   else "String"
 }, valueClass = "character")
 
